@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QPushButton, QToolTip, QApplication, QMessageBox, QDesktopWidget,QInputDialog
+from PyQt5.QtWidgets import QWidget, QPushButton, QToolTip, QApplication, QMessageBox, QDesktopWidget, QInputDialog
 from PyQt5.QtSql import QSqlQuery, QSqlDatabase
 
 
@@ -16,7 +16,7 @@ class Window(QWidget):
         self.add_student = QPushButton("Добавить ученика", self)
         self.add_student.move(5, 5)
         self.add_student.resize(150, 30)
-        # self.add_student.clicked.connected
+        self.add_student.clicked.connect(self.b_student)
         self.add_mark = QPushButton("Добавить оценку", self)
         self.add_mark.move(5, 40)
         self.add_mark.resize(150, 30)
@@ -43,13 +43,11 @@ class Window(QWidget):
             self.query.prepare("INSERT INTO marks(name) VALUES (?)")
             self.query.addBindValue(name)
             self.query.exec()
+
     def get_text(self):
-        name, ok = QInputDialog.getText(self,"Добавить ученика","Введите имя")
+        name, ok = QInputDialog.getText(self, "Добавить ученика", "Введите имя")
         if ok:
             return name
-
-
-
 
 
 if __name__ == "__main__":
