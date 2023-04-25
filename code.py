@@ -1,12 +1,47 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QPushButton, QToolTip, QApplication, QMessageBox, QDesktopWidget, QInputDialog
+from PyQt5.QtWidgets import QWidget, QPushButton, QToolTip, QApplication, QMessageBox, QDesktopWidget, QInputDialog, \
+    QMainWindow, QTableWidget, QTableWidgetItem
 from PyQt5.QtSql import QSqlQuery, QSqlDatabase
+
+
+class DbTable(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.create_data_base()
+        self.resize(300, 300)
+        self.setWindowTitle("Оценки")
+        self.tw = QTableWidget()
+        self.table_formation()
+        self.setCentralWidget(self.tw)
+        self.show()
+
+    def closeEvent(self, event):
+        self.db.close()
+        event.accept()
+
+    def create_data_base(self):
+        self.db = QSqlDatabase.addDatabase("QSQLITE")
+        self.db.setDatabaseName("studentperfomance.sqlite")
+        if not self.db.open():
+            print(self.db.lastError().text())
+            sys.exit(1)
+        self.query = QSqlQuery()
+
+    def table_formation(self):
+        self.tw.setColumnCount(2)
+        self.tw.setHorizontalHeaderLabels(["Имя", "Оценки"])
+        self.query.exec("""SELECT * FROM marks""")
+        while self.query.next():
+            row = self.tw.rowCount()
+            self.tw.setRowCount(row + 1)
+            self.tw.setItem(row, 0, QTableWidgetItem(self.query.value(1)))
+            self.tw.setItem(row, 1, QTableWidgetItem(self.query.value(2)))
+        self.tw.resizeColumnsToContents()
 
 
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-        self.create_data_base()
         self.resize(400, 400)
         self.setWindowTitle("Журнал")
         self.create_button()
@@ -24,6 +59,7 @@ class Window(QWidget):
         self.show_table = QPushButton("Показать оценки", self)
         self.show_table.move(5, 75)
         self.show_table.resize(150, 30)
+        self.show_table.clicked.connect(self.marks_table)
 
     def create_data_base(self):
         self.db = QSqlDatabase.addDatabase("QSQLITE")
@@ -41,11 +77,13 @@ class Window(QWidget):
         """Добавляем учеников"""
 
     def b_student(self):
+        self.create_data_base()
         name = self.get_text()
         if name:
             self.query.prepare("INSERT INTO marks(name) VALUES (?)")
             self.query.addBindValue(name)
             self.query.exec()
+        self.db.close()
 
     def get_text(self):
         name, ok = QInputDialog.getText(self, "Добавить ученика", "Введите имя")
@@ -55,12 +93,14 @@ class Window(QWidget):
         """""Добавляем оценки"""
 
     def set_mark(self):
+        self.create_data_base()
         names = self.get_names()
         name = self.get_choice(names)
         if name:
             mark = self.get_integer()
             new_grades = self.get_grades(mark, name)
             self.update_grade(name, new_grades)
+        self.db.close()
 
     def update_grade(self, name, new_grade):
         self.query.prepare("""UPDATE marks SET grades = (?) WHERE name = (?)""")
@@ -95,6 +135,9 @@ class Window(QWidget):
         while self.query.next():
             name_list.append(self.query.value(0))
         return name_list
+
+    def marks_table(self):
+        self.new_window = DbTable()
 
 
 if __name__ == "__main__":
